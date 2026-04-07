@@ -39,8 +39,13 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
   const [videos, setVideos] = useState<ScannedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [bulkAction, setBulkAction] = useState<string | null>(null);
+
+  const failedCount = videos.filter((video) => video.aiStatus === "failed").length;
+  const pendingCount = videos.filter((video) => video.aiStatus !== "success").length;
 
   async function loadVideos() {
     setLoading(true);
@@ -65,6 +70,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
   async function analyze(videoId: string) {
     setRunningId(videoId);
     setError(null);
+    setInfo(null);
 
     try {
       const res = await fetch(`/api/videos/${videoId}/analyze`, {
@@ -87,6 +93,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
   async function removeVideo(videoId: string) {
     setDeletingId(videoId);
     setError(null);
+    setInfo(null);
 
     try {
       const res = await fetch(`/api/videos/${videoId}`, { method: "DELETE" });
@@ -104,6 +111,53 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
     }
   }
 
+  async function runBulkAction(action: "analyze_all" | "retry_failed" | "delete_all" | "delete_failed") {
+    setBulkAction(action);
+    setError(null);
+    setInfo(null);
+
+    try {
+      const res = await fetch("/api/videos/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, concurrency: 3 }),
+      });
+
+      const payload = (await res.json()) as {
+        error?: string;
+        summary?: {
+          action: string;
+          total?: number;
+          pending?: number;
+          skippedNoTranscript?: number;
+          success?: number;
+          failed?: number;
+          newEvents?: number;
+          deleted?: number;
+        };
+      };
+
+      if (!res.ok) {
+        throw new Error(payload.error || "Bulk action failed.");
+      }
+
+      const summary = payload.summary;
+      if (summary?.deleted !== undefined) {
+        setInfo(`Done: ${summary.deleted} videos removed.`);
+      } else if (summary) {
+        setInfo(
+          `Done: ${summary.success || 0}/${summary.total || 0} processed, ${summary.failed || 0} failed, ${summary.newEvents || 0} events found, ${summary.skippedNoTranscript || 0} skipped (no transcript).`,
+        );
+      }
+
+      await loadVideos();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Bulk action failed.");
+    } finally {
+      setBulkAction(null);
+    }
+  }
+
   useEffect(() => {
     void loadVideos();
   }, [refreshSignal]);
@@ -115,12 +169,55 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
         <CardDescription>See transcript, current AI status, and run analysis on demand.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onClick={() => void runBulkAction("analyze_all")}
+            disabled={Boolean(bulkAction) || loading || pendingCount === 0}
+          >
+            {bulkAction === "analyze_all" ? "Processing..." : `Proceed All to AI (${pendingCount})`}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void runBulkAction("retry_failed")}
+            disabled={Boolean(bulkAction) || loading || failedCount === 0}
+          >
+            {bulkAction === "retry_failed" ? "Retrying..." : `Retry Failed (${failedCount})`}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-destructive/50 text-destructive hover:bg-destructive/10"
+            onClick={() => void runBulkAction("delete_failed")}
+            disabled={Boolean(bulkAction) || loading || failedCount === 0}
+          >
+            {bulkAction === "delete_failed" ? "Deleting..." : `Delete Failed (${failedCount})`}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-destructive/50 text-destructive hover:bg-destructive/10"
+            onClick={() => void runBulkAction("delete_all")}
+            disabled={Boolean(bulkAction) || loading || videos.length === 0}
+          >
+            {bulkAction === "delete_all" ? "Deleting All..." : "Delete All"}
+          </Button>
+        </div>
+
         {loading ? <p className="text-sm text-muted-foreground">Loading videos...</p> : null}
 
         {error ? (
           <Alert className="border-destructive/40 bg-destructive/5">
             <AlertTitle>Action failed</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        {info ? (
+          <Alert>
+            <AlertTitle>Bulk action complete</AlertTitle>
+            <AlertDescription>{info}</AlertDescription>
           </Alert>
         ) : null}
 
@@ -139,7 +236,11 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
               <div className="flex items-center gap-2">
                 <Badge variant={statusVariant(video.aiStatus)}>{statusLabel(video.aiStatus)}</Badge>
                 <Badge variant="outline">{video.eventsCount} events</Badge>
-                <Button size="sm" onClick={() => void analyze(video.videoId)} disabled={runningId === video.videoId}>
+                <Button
+                  size="sm"
+                  onClick={() => void analyze(video.videoId)}
+                  disabled={runningId === video.videoId || Boolean(bulkAction)}
+                >
                   {runningId === video.videoId ? "Analyzing..." : "Proceed to AI"}
                 </Button>
                 <Button
@@ -147,7 +248,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
                   variant="outline"
                   className="border-destructive/50 text-destructive hover:bg-destructive/10"
                   onClick={() => void removeVideo(video.videoId)}
-                  disabled={deletingId === video.videoId}
+                  disabled={deletingId === video.videoId || Boolean(bulkAction)}
                 >
                   {deletingId === video.videoId ? "Deleting..." : "Delete"}
                 </Button>

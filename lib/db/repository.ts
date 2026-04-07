@@ -2,7 +2,7 @@ import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db, ensureDbSchema } from "@/lib/db/client";
 import { eventsTable, videosTable } from "@/lib/db/schema";
-import type { DetectedEvent, ScanInputVideo, ScannedVideo, StoredEvent } from "@/lib/types";
+import type { DetectedEvent, ScanInputVideo, ScannedVideo, StoredEvent, VideoAiStatus } from "@/lib/types";
 
 const schemaReady = ensureDbSchema();
 
@@ -30,6 +30,21 @@ export async function deleteVideo(videoId: string) {
     .where(eq(videosTable.videoId, videoId))
     .returning({ id: videosTable.id });
   return deleted.length > 0;
+}
+
+export async function deleteAllVideos() {
+  await ensureReady();
+  const deleted = await db.delete(videosTable).returning({ id: videosTable.id });
+  return deleted.length;
+}
+
+export async function deleteVideosByStatus(status: VideoAiStatus) {
+  await ensureReady();
+  const deleted = await db
+    .delete(videosTable)
+    .where(eq(videosTable.aiStatus, status))
+    .returning({ id: videosTable.id });
+  return deleted.length;
 }
 
 export async function upsertVideo(video: ScanInputVideo, transcript: string | null) {
