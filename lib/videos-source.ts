@@ -77,3 +77,25 @@ export function getSequentialBatchVideos() {
     };
   });
 }
+
+export function getBatchVideosByOrder(startOrder: number, endOrder: number) {
+  const raw = readRawSourceVideos();
+  const start = Math.max(1, startOrder);
+  const end = Math.max(start, endOrder);
+  const batch = raw.slice(start - 1, end);
+
+  return batch.map((row, index) => {
+    const order = start + index;
+    const videoUrl = row.videoUrl?.trim() || "";
+    const videoId = videoUrl ? extractVideoId(videoUrl) : null;
+
+    return {
+      order,
+      videoUrl,
+      videoId,
+      title: row.title?.trim() || (videoId ? `Video ${videoId}` : "Unknown title"),
+      publishDate: row.publishDate?.trim() || new Date().toISOString(),
+      valid: Boolean(videoUrl && videoId),
+    };
+  });
+}

@@ -1,11 +1,10 @@
 import {
   getEventsByVideoId,
   getVideo,
-  isVideoProcessed,
   upsertVideo,
 } from "@/lib/db/repository";
 import { analyzeVideoById } from "@/lib/pipeline";
-import { getSequentialBatchVideos } from "@/lib/videos-source";
+import { getBatchVideosByOrder } from "@/lib/videos-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,8 +24,17 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function POST() {
-  const batch = getSequentialBatchVideos();
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => ({}))) as {
+    startOrder?: number;
+    endOrder?: number;
+    delayMs?: number;
+  };
+
+  const startOrder = body.startOrder ?? 1;
+  const endOrder = body.endOrder ?? 35;
+  const delayMs = Math.max(0, body.delayMs ?? DELAY_BETWEEN_VIDEOS_MS);
+  const batch = getBatchVideosByOrder(startOrder, endOrder);
   const items: BatchItem[] = [];
 
   for (let index = 0; index < batch.length; index += 1) {
@@ -44,41 +52,41 @@ export async function POST() {
       continue;
     }
 
-    if (!getVideo(entry.videoId)) {
-      upsertVideo(
-        {
-          videoId: entry.videoId,
-          title: entry.title,
-          url: entry.videoUrl,
-          publishedAt: entry.publishDate,
-        },
-        null,
-      );
-    }
-
-    if (isVideoProcessed(entry.videoId)) {
+    if (getVideo(entry.videoId)) {
       const events = getEventsByVideoId(entry.videoId);
       items.push({
         order: entry.order,
         videoId: entry.videoId,
         title: entry.title,
-        status: "cached",
+        status: "skipped",
         eventsFound: events.length,
+        error: "Video already exists in DB. Skipped to save transcript credits.",
       });
-    } else {
-      const result = await analyzeVideoById(entry.videoId);
-      items.push({
-        order: entry.order,
-        videoId: entry.videoId,
-        title: entry.title,
-        status: result.error ? "failed" : "success",
-        eventsFound: result.eventsFound,
-        error: result.error,
-      });
+      continue;
     }
 
+    upsertVideo(
+      {
+        videoId: entry.videoId,
+        title: entry.title,
+        url: entry.videoUrl,
+        publishedAt: entry.publishDate,
+      },
+      null,
+    );
+
+    const result = await analyzeVideoById(entry.videoId);
+    items.push({
+      order: entry.order,
+      videoId: entry.videoId,
+      title: entry.title,
+      status: result.error ? "failed" : "success",
+      eventsFound: result.eventsFound,
+      error: result.error,
+    });
+
     if (index < batch.length - 1) {
-      await wait(DELAY_BETWEEN_VIDEOS_MS);
+      await wait(delayMs);
     }
   }
 
