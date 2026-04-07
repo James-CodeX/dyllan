@@ -185,6 +185,7 @@ export async function getEventsByVideoId(videoId: string) {
       videoId: videosTable.videoId,
       videoTitle: videosTable.title,
       videoUrl: videosTable.url,
+      videoPublishedAt: videosTable.publishedAt,
       event: eventsTable.event,
       description: eventsTable.description,
       timestamp: eventsTable.timestamp,
@@ -209,6 +210,7 @@ export async function listEvents(videoId?: string) {
       videoId: videosTable.videoId,
       videoTitle: videosTable.title,
       videoUrl: videosTable.url,
+      videoPublishedAt: videosTable.publishedAt,
       event: eventsTable.event,
       description: eventsTable.description,
       timestamp: eventsTable.timestamp,
@@ -216,6 +218,6 @@ export async function listEvents(videoId?: string) {
     })
     .from(eventsTable)
     .innerJoin(videosTable, eq(eventsTable.videoDbId, videosTable.id))
-    .orderBy(desc(eventsTable.createdAt))
+    .orderBy(desc(videosTable.publishedAt), desc(eventsTable.createdAt))
     .execute()) as StoredEvent[];
 }

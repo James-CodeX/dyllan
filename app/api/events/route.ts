@@ -1,5 +1,4 @@
 import { listEvents } from "@/lib/db/repository";
-import { getOrderedSourceVideos } from "@/lib/videos-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,20 +8,5 @@ export async function GET(request: Request) {
   const videoId = searchParams.get("videoId") || undefined;
   const events = await listEvents(videoId);
 
-  const orderMap = new Map(
-    getOrderedSourceVideos().map((video) => [video.videoId, video.order]),
-  );
-
-  const sorted = [...events].sort((a, b) => {
-    const orderA = orderMap.get(a.videoId) ?? Number.MAX_SAFE_INTEGER;
-    const orderB = orderMap.get(b.videoId) ?? Number.MAX_SAFE_INTEGER;
-
-    if (orderA !== orderB) {
-      return orderA - orderB;
-    }
-
-    return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-  });
-
-  return Response.json({ events: sorted });
+  return Response.json({ events });
 }

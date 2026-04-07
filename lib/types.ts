@@ -35,6 +35,7 @@ export type StoredEvent = {
   videoId: string;
   videoTitle: string;
   videoUrl: string;
+  videoPublishedAt: string;
   event: string;
   description: string;
   timestamp: string;
