@@ -161,7 +161,7 @@ export async function listScannedVideos(limit = 100) {
     .from(videosTable)
     .leftJoin(eventsTable, eq(eventsTable.videoDbId, videosTable.id))
     .groupBy(videosTable.id)
-    .orderBy(desc(videosTable.createdAt))
+    .orderBy(desc(videosTable.publishedAt), desc(videosTable.createdAt))
     .limit(limit)
     .execute();
 

@@ -69,7 +69,7 @@ async function runChunkAnalysis(chunk: string) {
         {
           role: "user",
           content: [
-            "Extract any history made or record-breaking new events metioned by the speaker as history made or record breaking news from this transcript chunk.",
+            "Extract any history made or record-breaking events from this transcript chunk.",
             "Return JSON only using this exact format:",
             '[{"event":"...","description":"...","timestamp":"..."}]',
             "If none are found, return [].",
