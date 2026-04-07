@@ -81,12 +81,12 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
 
       const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
-        throw new Error(payload.error || "AI analysis failed.");
+        throw new Error(payload.error || "AI scan failed.");
       }
 
       await loadVideos();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "AI analysis failed.");
+      setError(caught instanceof Error ? caught.message : "AI scan failed.");
     } finally {
       setRunningId(null);
     }
@@ -182,7 +182,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
     <Card>
       <CardHeader>
         <CardTitle>Scanned Videos</CardTitle>
-        <CardDescription>Stage workflow: import from JSON, then fetch transcripts, then proceed to AI.</CardDescription>
+        <CardDescription>Stage workflow: import from JSON, then fetch transcripts, then AI scan.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-2">
@@ -209,7 +209,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
             onClick={() => void runBulkAction("analyze_all")}
             disabled={Boolean(bulkAction) || loading || aiReadyCount === 0}
           >
-            {bulkAction === "analyze_all" ? "Processing..." : `Proceed All to AI (${aiReadyCount})`}
+            {bulkAction === "analyze_all" ? "AI Scanning..." : `AI Scan (${aiReadyCount})`}
           </Button>
           <Button
             size="sm"
@@ -275,7 +275,11 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
                   onClick={() => void analyze(video.videoId)}
                   disabled={runningId === video.videoId || Boolean(bulkAction)}
                 >
-                  {runningId === video.videoId ? "Analyzing..." : "Proceed to AI"}
+                  {runningId === video.videoId
+                    ? "AI Scanning..."
+                    : video.aiStatus === "success"
+                      ? "AI Scan Again"
+                      : "AI Scan"}
                 </Button>
                 <Button
                   size="sm"
