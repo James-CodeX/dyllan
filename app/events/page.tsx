@@ -7,25 +7,36 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default function EventsPage() {
-  const events = listEvents();
-  const orderMap = new Map(
-    getOrderedSourceVideos().map((video) => [video.videoId, video.order]),
-  );
+  let sortedEvents = listEvents();
+  let loadError: string | null = null;
 
-  const sortedEvents = [...events].sort((a, b) => {
-    const orderA = orderMap.get(a.videoId) ?? Number.MAX_SAFE_INTEGER;
-    const orderB = orderMap.get(b.videoId) ?? Number.MAX_SAFE_INTEGER;
+  try {
+    const orderMap = new Map(
+      getOrderedSourceVideos().map((video) => [video.videoId, video.order]),
+    );
 
-    if (orderA !== orderB) {
-      return orderA - orderB;
-    }
+    sortedEvents = [...sortedEvents].sort((a, b) => {
+      const orderA = orderMap.get(a.videoId) ?? Number.MAX_SAFE_INTEGER;
+      const orderB = orderMap.get(b.videoId) ?? Number.MAX_SAFE_INTEGER;
 
-    return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-  });
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+    });
+  } catch (error) {
+    loadError = error instanceof Error ? error.message : "Failed to load events.";
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 md:px-6">
-      {sortedEvents.length ? (
+      {loadError ? (
+        <Alert className="border-destructive/40 bg-destructive/5">
+          <AlertTitle>Could not load events</AlertTitle>
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
+      ) : sortedEvents.length ? (
         <EventsTable events={sortedEvents} />
       ) : (
         <Alert>

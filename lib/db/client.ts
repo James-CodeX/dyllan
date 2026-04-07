@@ -6,12 +6,29 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 
 import { eventsTable, videosTable } from "@/lib/db/schema";
 
-const dbDir = path.join(process.cwd(), "data");
-const dbFile = path.join(dbDir, "app.db");
+function runningOnVercel() {
+  return Boolean(process.env.VERCEL);
+}
+
+function dbDirectory() {
+  if (runningOnVercel()) {
+    return path.join("/tmp", "dyllann");
+  }
+
+  return path.join(process.cwd(), "data");
+}
 
 function createConnection() {
-  fs.mkdirSync(dbDir, { recursive: true });
-  return new Database(dbFile);
+  const primaryDir = dbDirectory();
+
+  try {
+    fs.mkdirSync(primaryDir, { recursive: true });
+    return new Database(path.join(primaryDir, "app.db"));
+  } catch {
+    const fallbackDir = path.join("/tmp", "dyllann");
+    fs.mkdirSync(fallbackDir, { recursive: true });
+    return new Database(path.join(fallbackDir, "app.db"));
+  }
 }
 
 const globalDb = globalThis as { __historyTrackerDb?: Database.Database };

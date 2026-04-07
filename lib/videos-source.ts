@@ -22,14 +22,18 @@ function sourceFilePath() {
 }
 
 function readRawSourceVideos() {
-  const content = fs.readFileSync(sourceFilePath(), "utf-8");
-  const parsed = JSON.parse(content) as unknown;
+  try {
+    const content = fs.readFileSync(sourceFilePath(), "utf-8");
+    const parsed = JSON.parse(content) as unknown;
 
-  if (!Array.isArray(parsed)) {
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed as RawSourceVideo[];
+  } catch {
     return [];
   }
-
-  return parsed as RawSourceVideo[];
 }
 
 export function getOrderedSourceVideos() {
