@@ -15,11 +15,23 @@ type Props = {
   onScanComplete?: () => void;
 };
 
+type SystematicScanResult = {
+  summary: {
+    total: number;
+    success: number;
+    cached: number;
+    failed: number;
+    skipped: number;
+  };
+};
+
 export function ScanForm({ onScanComplete }: Props) {
   const [input, setInput] = useState(defaultInput);
   const [loading, setLoading] = useState(false);
+  const [systematicLoading, setSystematicLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanPipelineResult | null>(null);
+  const [systematicResult, setSystematicResult] = useState<SystematicScanResult | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,6 +61,30 @@ export function ScanForm({ onScanComplete }: Props) {
     }
   }
 
+  async function runSystematicScan() {
+    setSystematicLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/scan/systematic", {
+        method: "POST",
+      });
+
+      const payload = (await res.json()) as SystematicScanResult & { error?: string };
+      if (!res.ok) {
+        throw new Error(payload.error || "Systematic scan failed.");
+      }
+
+      setSystematicResult(payload);
+      onScanComplete?.();
+    } catch (caught) {
+      setSystematicResult(null);
+      setError(caught instanceof Error ? caught.message : "Systematic scan failed.");
+    } finally {
+      setSystematicLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card className="border-border/60">
@@ -59,9 +95,20 @@ export function ScanForm({ onScanComplete }: Props) {
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <Input value={input} onChange={(event) => setInput(event.target.value)} placeholder="https://www.youtube.com/@channel" required />
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-              {loading ? "Scanning..." : "Scan"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={loading || systematicLoading} className="w-full sm:w-auto">
+                {loading ? "Scanning..." : "Scan"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading || systematicLoading}
+                onClick={() => void runSystematicScan()}
+                className="w-full sm:w-auto"
+              >
+                {systematicLoading ? "Scanning 3 to 35..." : "Scan Videos 3 to 35"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -114,6 +161,21 @@ export function ScanForm({ onScanComplete }: Props) {
               </Alert>
             ) : null}
           </CardContent>
+        </Card>
+      ) : null}
+
+      {systematicResult ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Systematic Scan Summary (3rd to 35th)</CardTitle>
+            <CardDescription>
+              <span className="mr-3">Total: {systematicResult.summary.total}</span>
+              <span className="mr-3">Success: {systematicResult.summary.success}</span>
+              <span className="mr-3">Cached: {systematicResult.summary.cached}</span>
+              <span className="mr-3">Failed: {systematicResult.summary.failed}</span>
+              <span>Skipped: {systematicResult.summary.skipped}</span>
+            </CardDescription>
+          </CardHeader>
         </Card>
       ) : null}
     </div>
