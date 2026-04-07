@@ -4,45 +4,61 @@ import { db, ensureDbSchema } from "@/lib/db/client";
 import { eventsTable, videosTable } from "@/lib/db/schema";
 import type { DetectedEvent, ScanInputVideo, ScannedVideo, StoredEvent } from "@/lib/types";
 
-ensureDbSchema();
+const schemaReady = ensureDbSchema();
+
+async function ensureReady() {
+  await schemaReady;
+}
 
 type VideoRow = typeof videosTable.$inferSelect;
 
-export function getVideo(videoId: string) {
-  return db.select().from(videosTable).where(eq(videosTable.videoId, videoId)).get();
+export async function getVideo(videoId: string) {
+  await ensureReady();
+  const rows = await db
+    .select()
+    .from(videosTable)
+    .where(eq(videosTable.videoId, videoId))
+    .limit(1)
+    .execute();
+  return rows[0];
 }
 
-export function deleteVideo(videoId: string) {
-  const video = getVideo(videoId);
-
-  if (!video) {
-    return false;
-  }
-
-  db.delete(videosTable).where(eq(videosTable.id, video.id)).run();
-  return true;
+export async function deleteVideo(videoId: string) {
+  await ensureReady();
+  const deleted = await db
+    .delete(videosTable)
+    .where(eq(videosTable.videoId, videoId))
+    .returning({ id: videosTable.id });
+  return deleted.length > 0;
 }
 
-export function upsertVideo(video: ScanInputVideo, transcript: string | null) {
-  const existing = getVideo(video.videoId);
+export async function upsertVideo(video: ScanInputVideo, transcript: string | null) {
+  await ensureReady();
+  const existing = await getVideo(video.videoId);
 
   if (existing) {
-    db.update(videosTable)
+    await db
+      .update(videosTable)
       .set({
         title: video.title,
         url: video.url,
         publishedAt: video.publishedAt,
         transcript: transcript ?? existing.transcript,
-        aiStatus: existing.processedAt ? "success" : transcript || existing.transcript ? "queued" : "needs_transcript",
+        aiStatus:
+          existing.processedAt || existing.aiStatus === "success"
+            ? "success"
+            : transcript || existing.transcript
+              ? "queued"
+              : "needs_transcript",
         lastError: null,
       })
       .where(eq(videosTable.id, existing.id))
-      .run();
+      .execute();
 
-    return getVideo(video.videoId) as VideoRow;
+    return (await getVideo(video.videoId)) as VideoRow;
   }
 
-  const created = db
+  const created = await db
     .insert(videosTable)
     .values({
       videoId: video.videoId,
@@ -55,20 +71,22 @@ export function upsertVideo(video: ScanInputVideo, transcript: string | null) {
       lastAttemptAt: null,
       processedAt: null,
     })
-    .run();
+    .returning();
 
-  return db.select().from(videosTable).where(eq(videosTable.id, Number(created.lastInsertRowid))).get() as VideoRow;
+  return created[0] as VideoRow;
 }
 
-export function isVideoProcessed(videoId: string) {
-  const video = getVideo(videoId);
+export async function isVideoProcessed(videoId: string) {
+  const video = await getVideo(videoId);
   return Boolean(video?.processedAt);
 }
 
-export function markVideoProcessed(videoDbId: number) {
+export async function markVideoProcessed(videoDbId: number) {
+  await ensureReady();
   const now = new Date().toISOString();
 
-  db.update(videosTable)
+  await db
+    .update(videosTable)
     .set({
       processedAt: now,
       aiStatus: "success",
@@ -76,21 +94,24 @@ export function markVideoProcessed(videoDbId: number) {
       lastAttemptAt: now,
     })
     .where(eq(videosTable.id, videoDbId))
-    .run();
+    .execute();
 }
 
-export function markVideoFailed(videoDbId: number, message: string) {
-  db.update(videosTable)
+export async function markVideoFailed(videoDbId: number, message: string) {
+  await ensureReady();
+  await db
+    .update(videosTable)
     .set({
       aiStatus: "failed",
       lastError: message.slice(0, 500),
       lastAttemptAt: new Date().toISOString(),
     })
     .where(eq(videosTable.id, videoDbId))
-    .run();
+    .execute();
 }
 
-export function listQueuedVideos(limit = 20) {
+export async function listQueuedVideos(limit = 20) {
+  await ensureReady();
   return db
     .select()
     .from(videosTable)
@@ -103,43 +124,48 @@ export function listQueuedVideos(limit = 20) {
     )
     .orderBy(videosTable.createdAt)
     .limit(limit)
-    .all();
+    .execute();
 }
 
-export function listScannedVideos(limit = 100) {
-  const rows = db.select().from(videosTable).orderBy(desc(videosTable.createdAt)).limit(limit).all();
+export async function listScannedVideos(limit = 100) {
+  await ensureReady();
+  const rows = await db
+    .select({
+      videoId: videosTable.videoId,
+      title: videosTable.title,
+      url: videosTable.url,
+      publishedAt: videosTable.publishedAt,
+      transcript: videosTable.transcript,
+      processedAt: videosTable.processedAt,
+      aiStatus: videosTable.aiStatus,
+      lastError: videosTable.lastError,
+      lastAttemptAt: videosTable.lastAttemptAt,
+      createdAt: videosTable.createdAt,
+      eventsCount: sql<number>`count(${eventsTable.id})`,
+    })
+    .from(videosTable)
+    .leftJoin(eventsTable, eq(eventsTable.videoDbId, videosTable.id))
+    .groupBy(videosTable.id)
+    .orderBy(desc(videosTable.createdAt))
+    .limit(limit)
+    .execute();
 
-  return rows.map((video) => {
-    const eventCount = db
-      .select({ count: sql<number>`count(*)` })
-      .from(eventsTable)
-      .where(eq(eventsTable.videoDbId, video.id))
-      .get();
-
-    return {
-      videoId: video.videoId,
-      title: video.title,
-      url: video.url,
-      publishedAt: video.publishedAt,
-      transcript: video.transcript,
-      processedAt: video.processedAt,
-      aiStatus: video.aiStatus,
-      lastError: video.lastError,
-      lastAttemptAt: video.lastAttemptAt,
-      createdAt: video.createdAt,
-      eventsCount: Number(eventCount?.count || 0),
-    } as ScannedVideo;
-  });
+  return rows.map((video) => ({
+    ...video,
+    eventsCount: Number(video.eventsCount || 0),
+  })) as ScannedVideo[];
 }
 
-export function replaceVideoEvents(videoDbId: number, events: DetectedEvent[]) {
-  db.delete(eventsTable).where(eq(eventsTable.videoDbId, videoDbId)).run();
+export async function replaceVideoEvents(videoDbId: number, events: DetectedEvent[]) {
+  await ensureReady();
+  await db.delete(eventsTable).where(eq(eventsTable.videoDbId, videoDbId)).execute();
 
   if (!events.length) {
     return;
   }
 
-  db.insert(eventsTable)
+  await db
+    .insert(eventsTable)
     .values(
       events.map((entry) => ({
         videoDbId,
@@ -148,11 +174,12 @@ export function replaceVideoEvents(videoDbId: number, events: DetectedEvent[]) {
         timestamp: entry.timestamp,
       })),
     )
-    .run();
+    .execute();
 }
 
-export function getEventsByVideoId(videoId: string) {
-  return db
+export async function getEventsByVideoId(videoId: string) {
+  await ensureReady();
+  return (await db
     .select({
       id: eventsTable.id,
       videoId: videosTable.videoId,
@@ -167,15 +194,16 @@ export function getEventsByVideoId(videoId: string) {
     .innerJoin(videosTable, eq(eventsTable.videoDbId, videosTable.id))
     .where(eq(videosTable.videoId, videoId))
     .orderBy(desc(eventsTable.createdAt))
-    .all() as StoredEvent[];
+    .execute()) as StoredEvent[];
 }
 
-export function listEvents(videoId?: string) {
+export async function listEvents(videoId?: string) {
   if (videoId) {
-    return getEventsByVideoId(videoId);
+    return await getEventsByVideoId(videoId);
   }
 
-  return db
+  await ensureReady();
+  return (await db
     .select({
       id: eventsTable.id,
       videoId: videosTable.videoId,
@@ -189,5 +217,5 @@ export function listEvents(videoId?: string) {
     .from(eventsTable)
     .innerJoin(videosTable, eq(eventsTable.videoDbId, videosTable.id))
     .orderBy(desc(eventsTable.createdAt))
-    .all() as StoredEvent[];
+    .execute()) as StoredEvent[];
 }

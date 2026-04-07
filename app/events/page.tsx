@@ -6,11 +6,13 @@ import { getOrderedSourceVideos } from "@/lib/videos-source";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default function EventsPage() {
-  let sortedEvents = listEvents();
+export default async function EventsPage() {
+  let sortedEvents = [] as Awaited<ReturnType<typeof listEvents>>;
   let loadError: string | null = null;
 
   try {
+    sortedEvents = await listEvents();
+
     const orderMap = new Map(
       getOrderedSourceVideos().map((video) => [video.videoId, video.order]),
     );

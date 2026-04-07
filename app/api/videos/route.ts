@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const videos = listScannedVideos();
+    const videos = await listScannedVideos();
     return Response.json({ videos });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load scanned videos.";

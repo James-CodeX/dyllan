@@ -14,7 +14,7 @@ import type { ScanItemResult, ScanPipelineResult } from "@/lib/types";
 import { collectVideos } from "@/lib/youtube";
 
 export async function analyzeVideoById(videoId: string): Promise<ScanItemResult> {
-  const existing = getVideo(videoId);
+  const existing = await getVideo(videoId);
 
   if (!existing) {
     throw new Error("Video not found in database.");
@@ -22,7 +22,7 @@ export async function analyzeVideoById(videoId: string): Promise<ScanItemResult>
 
   if (!existing.transcript) {
     const transcript = (await fetchTranscript(existing.url)).slice(0, 20000);
-    upsertVideo(
+    await upsertVideo(
       {
         videoId: existing.videoId,
         title: existing.title,
@@ -33,15 +33,15 @@ export async function analyzeVideoById(videoId: string): Promise<ScanItemResult>
     );
   }
 
-  const refreshed = getVideo(videoId);
+  const refreshed = await getVideo(videoId);
   if (!refreshed?.transcript) {
     throw new Error("Transcript is missing.");
   }
 
   try {
     const events = await analyzeTranscript(refreshed.transcript);
-    replaceVideoEvents(refreshed.id, events);
-    markVideoProcessed(refreshed.id);
+    await replaceVideoEvents(refreshed.id, events);
+    await markVideoProcessed(refreshed.id);
 
     return {
       videoId: refreshed.videoId,
@@ -51,7 +51,7 @@ export async function analyzeVideoById(videoId: string): Promise<ScanItemResult>
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to process video.";
-    markVideoFailed(refreshed.id, message);
+    await markVideoFailed(refreshed.id, message);
     return {
       videoId: refreshed.videoId,
       title: refreshed.title,
@@ -64,7 +64,7 @@ export async function analyzeVideoById(videoId: string): Promise<ScanItemResult>
 
 export async function runScan(input: string): Promise<ScanPipelineResult> {
   const freshVideos = await collectVideos(input);
-  const queuedVideos = listQueuedVideos().map((video) => ({
+  const queuedVideos = (await listQueuedVideos()).map((video) => ({
     videoId: video.videoId,
     title: video.title,
     url: video.url,
@@ -82,8 +82,8 @@ export async function runScan(input: string): Promise<ScanPipelineResult> {
   let newEvents = 0;
 
   for (const video of videos) {
-    if (isVideoProcessed(video.videoId)) {
-      const events = getEventsByVideoId(video.videoId);
+    if (await isVideoProcessed(video.videoId)) {
+      const events = await getEventsByVideoId(video.videoId);
       items.push({
         videoId: video.videoId,
         title: video.title,
@@ -95,9 +95,9 @@ export async function runScan(input: string): Promise<ScanPipelineResult> {
     }
 
     try {
-      const existing = getVideo(video.videoId);
+      const existing = await getVideo(video.videoId);
       const transcript = existing?.transcript ?? (await fetchTranscript(video.url)).slice(0, 20000);
-      upsertVideo(video, transcript);
+      await upsertVideo(video, transcript);
       const analyzed = await analyzeVideoById(video.videoId);
 
       if (analyzed.error) {
@@ -108,10 +108,10 @@ export async function runScan(input: string): Promise<ScanPipelineResult> {
       }
       items.push(analyzed);
     } catch (error) {
-      const saved = getVideo(video.videoId);
+      const saved = await getVideo(video.videoId);
       if (saved) {
         const message = error instanceof Error ? error.message : "Failed to process video. Added to queue.";
-        markVideoFailed(saved.id, message);
+        await markVideoFailed(saved.id, message);
       }
       failedVideos += 1;
       items.push({

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const videoId = searchParams.get("videoId") || undefined;
-  const events = listEvents(videoId);
+  const events = await listEvents(videoId);
 
   const orderMap = new Map(
     getOrderedSourceVideos().map((video) => [video.videoId, video.order]),

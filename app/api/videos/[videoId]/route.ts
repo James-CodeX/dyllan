@@ -8,7 +8,7 @@ export async function DELETE(
   { params }: { params: Promise<{ videoId: string }> },
 ) {
   const { videoId } = await params;
-  const deleted = deleteVideo(videoId);
+  const deleted = await deleteVideo(videoId);
 
   if (!deleted) {
     return Response.json({ error: "Video not found." }, { status: 404 });

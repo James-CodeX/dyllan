@@ -1,59 +1,51 @@
-import fs from "node:fs";
-import path from "node:path";
-
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 
 import { eventsTable, videosTable } from "@/lib/db/schema";
 
-function runningOnVercel() {
-  return Boolean(process.env.VERCEL);
+const tursoUrl = process.env.TURSO_DATABASE_URL;
+
+if (!tursoUrl) {
+  throw new Error("Missing TURSO_DATABASE_URL environment variable.");
 }
 
-function dbDirectory() {
-  if (runningOnVercel()) {
-    return path.join("/tmp", "dyllann");
-  }
+const globalClient = globalThis as {
+  __historyTrackerDbClient?: ReturnType<typeof createClient>;
+};
 
-  return path.join(process.cwd(), "data");
+const client =
+  globalClient.__historyTrackerDbClient ??
+  createClient({
+    url: tursoUrl,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+
+if (!globalClient.__historyTrackerDbClient) {
+  globalClient.__historyTrackerDbClient = client;
 }
 
-function createConnection() {
-  const primaryDir = dbDirectory();
-
-  try {
-    fs.mkdirSync(primaryDir, { recursive: true });
-    return new Database(path.join(primaryDir, "app.db"));
-  } catch {
-    const fallbackDir = path.join("/tmp", "dyllann");
-    fs.mkdirSync(fallbackDir, { recursive: true });
-    return new Database(path.join(fallbackDir, "app.db"));
-  }
-}
-
-const globalDb = globalThis as { __historyTrackerDb?: Database.Database };
-const sqlite = globalDb.__historyTrackerDb ?? createConnection();
-
-if (!globalDb.__historyTrackerDb) {
-  sqlite.pragma("journal_mode = WAL");
-  globalDb.__historyTrackerDb = sqlite;
-}
-
-export const db = drizzle(sqlite, {
+export const db = drizzle(client, {
   schema: {
     videosTable,
     eventsTable,
   },
 });
 
-let initialized = false;
+let initializePromise: Promise<void> | null = null;
 
-export function ensureDbSchema() {
-  if (initialized) {
-    return;
+async function executeIgnoreDuplicateColumn(statement: string) {
+  try {
+    await client.execute(statement);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (!message.includes("duplicate column name")) {
+      throw error;
+    }
   }
+}
 
-  sqlite.exec(`
+async function initializeSchema() {
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS videos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       video_id TEXT NOT NULL UNIQUE,
@@ -66,8 +58,10 @@ export function ensureDbSchema() {
       last_attempt_at TEXT,
       processed_at TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
+    )
+  `);
 
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       video_db_id INTEGER NOT NULL,
@@ -76,27 +70,18 @@ export function ensureDbSchema() {
       timestamp TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(video_db_id) REFERENCES videos(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_events_video_db_id ON events(video_db_id);
+    )
   `);
 
-  const columns = sqlite.prepare("PRAGMA table_info(videos)").all() as Array<{ name: string }>;
-  const hasColumn = (name: string) => columns.some((column) => column.name === name);
+  await client.execute("CREATE INDEX IF NOT EXISTS idx_events_video_db_id ON events(video_db_id)");
 
-  if (!hasColumn("ai_status")) {
-    sqlite.exec("ALTER TABLE videos ADD COLUMN ai_status TEXT NOT NULL DEFAULT 'needs_transcript'");
-  }
+  await executeIgnoreDuplicateColumn(
+    "ALTER TABLE videos ADD COLUMN ai_status TEXT NOT NULL DEFAULT 'needs_transcript'",
+  );
+  await executeIgnoreDuplicateColumn("ALTER TABLE videos ADD COLUMN last_error TEXT");
+  await executeIgnoreDuplicateColumn("ALTER TABLE videos ADD COLUMN last_attempt_at TEXT");
 
-  if (!hasColumn("last_error")) {
-    sqlite.exec("ALTER TABLE videos ADD COLUMN last_error TEXT");
-  }
-
-  if (!hasColumn("last_attempt_at")) {
-    sqlite.exec("ALTER TABLE videos ADD COLUMN last_attempt_at TEXT");
-  }
-
-  sqlite.exec(`
+  await client.execute(`
     UPDATE videos
     SET ai_status =
       CASE
@@ -104,8 +89,14 @@ export function ensureDbSchema() {
         WHEN transcript IS NOT NULL THEN 'queued'
         ELSE 'needs_transcript'
       END
-    WHERE ai_status IS NULL OR ai_status = '';
+    WHERE ai_status IS NULL OR ai_status = ''
   `);
+}
 
-  initialized = true;
+export function ensureDbSchema() {
+  if (!initializePromise) {
+    initializePromise = initializeSchema();
+  }
+
+  return initializePromise;
 }

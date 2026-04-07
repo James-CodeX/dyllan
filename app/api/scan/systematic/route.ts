@@ -52,8 +52,8 @@ export async function POST(request: Request) {
       continue;
     }
 
-    if (getVideo(entry.videoId)) {
-      const events = getEventsByVideoId(entry.videoId);
+    if (await getVideo(entry.videoId)) {
+      const events = await getEventsByVideoId(entry.videoId);
       items.push({
         order: entry.order,
         videoId: entry.videoId,
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       continue;
     }
 
-    upsertVideo(
+    await upsertVideo(
       {
         videoId: entry.videoId,
         title: entry.title,
