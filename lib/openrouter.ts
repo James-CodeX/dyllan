@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { DetectedEvent } from "@/lib/types";
 
-const model = "qwen/qwen3.6-plus:free";
+const model = "openai/gpt-oss-20b:free";
 
 const eventSchema = z.object({
   event: z.string().min(1),
