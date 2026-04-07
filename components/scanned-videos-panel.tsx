@@ -45,7 +45,9 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
   const [bulkAction, setBulkAction] = useState<string | null>(null);
 
   const failedCount = videos.filter((video) => video.aiStatus === "failed").length;
-  const pendingCount = videos.filter((video) => video.aiStatus !== "success").length;
+  const transcriptMissingCount = videos.filter((video) => !video.transcript).length;
+  const aiReadyCount = videos.filter((video) => video.aiStatus !== "success" && Boolean(video.transcript)).length;
+  const retryableFailedCount = videos.filter((video) => video.aiStatus === "failed" && Boolean(video.transcript)).length;
 
   async function loadVideos() {
     setLoading(true);
@@ -111,7 +113,15 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
     }
   }
 
-  async function runBulkAction(action: "analyze_all" | "retry_failed" | "delete_all" | "delete_failed") {
+  async function runBulkAction(
+    action:
+      | "import_from_json"
+      | "fetch_transcripts"
+      | "analyze_all"
+      | "retry_failed"
+      | "delete_all"
+      | "delete_failed",
+  ) {
     setBulkAction(action);
     setError(null);
     setInfo(null);
@@ -130,6 +140,8 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
           total?: number;
           pending?: number;
           skippedNoTranscript?: number;
+          inserted?: number;
+          existing?: number;
           success?: number;
           failed?: number;
           newEvents?: number;
@@ -144,6 +156,10 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
       const summary = payload.summary;
       if (summary?.deleted !== undefined) {
         setInfo(`Done: ${summary.deleted} videos removed.`);
+      } else if (summary?.inserted !== undefined) {
+        setInfo(`Imported: ${summary.inserted} new videos from JSON. Existing: ${summary.existing || 0}.`);
+      } else if (summary?.action === "fetch_transcripts") {
+        setInfo(`Transcripts: ${summary.success || 0}/${summary.total || 0} fetched, ${summary.failed || 0} failed.`);
       } else if (summary) {
         setInfo(
           `Done: ${summary.success || 0}/${summary.total || 0} processed, ${summary.failed || 0} failed, ${summary.newEvents || 0} events found, ${summary.skippedNoTranscript || 0} skipped (no transcript).`,
@@ -166,24 +182,42 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
     <Card>
       <CardHeader>
         <CardTitle>Scanned Videos</CardTitle>
-        <CardDescription>See transcript, current AI status, and run analysis on demand.</CardDescription>
+        <CardDescription>Stage workflow: import from JSON, then fetch transcripts, then proceed to AI.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            onClick={() => void runBulkAction("analyze_all")}
-            disabled={Boolean(bulkAction) || loading || pendingCount === 0}
+            variant="outline"
+            onClick={() => void runBulkAction("import_from_json")}
+            disabled={Boolean(bulkAction) || loading}
           >
-            {bulkAction === "analyze_all" ? "Processing..." : `Proceed All to AI (${pendingCount})`}
+            {bulkAction === "import_from_json" ? "Importing..." : "Import from JSON"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void runBulkAction("fetch_transcripts")}
+            disabled={Boolean(bulkAction) || loading || transcriptMissingCount === 0}
+          >
+            {bulkAction === "fetch_transcripts"
+              ? "Fetching Transcripts..."
+              : `Fetch Transcripts (${transcriptMissingCount})`}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => void runBulkAction("analyze_all")}
+            disabled={Boolean(bulkAction) || loading || aiReadyCount === 0}
+          >
+            {bulkAction === "analyze_all" ? "Processing..." : `Proceed All to AI (${aiReadyCount})`}
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={() => void runBulkAction("retry_failed")}
-            disabled={Boolean(bulkAction) || loading || failedCount === 0}
+            disabled={Boolean(bulkAction) || loading || retryableFailedCount === 0}
           >
-            {bulkAction === "retry_failed" ? "Retrying..." : `Retry Failed (${failedCount})`}
+            {bulkAction === "retry_failed" ? "Retrying..." : `Retry Failed (${retryableFailedCount})`}
           </Button>
           <Button
             size="sm"

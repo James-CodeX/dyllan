@@ -51,7 +51,7 @@ export default async function Home() {
               © {currentYear} History Record.
               {" "}
               <Link href="/add" className="font-medium underline underline-offset-2">
-                Open scan dashboard (1-35)
+                Open scan dashboard
               </Link>
             </p>
           </footer>
