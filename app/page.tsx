@@ -19,9 +19,9 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#e2e4e6] px-4 py-4 md:py-6">
-      <div className="mx-auto w-full max-w-6xl">
-        <section className="relative bg-transparent px-2 py-2 text-[11px] text-[#2e3339] md:px-4 md:py-3 md:text-xs">
+    <main className="flex min-h-screen bg-[#e2e4e6] px-4 py-4 md:py-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-1">
+        <section className="relative flex min-h-full w-full flex-col bg-transparent px-2 py-2 text-[11px] text-[#2e3339] md:px-4 md:py-3 md:text-xs">
           <header className="flex items-center gap-3">
             <Image
               src="/News_Daddy.png"
@@ -46,13 +46,20 @@ export default async function Home() {
             )}
           </div>
 
-          <footer className="mt-2 border-t-2 border-[#3a4047]/75 pt-2 text-[10px] text-[#2f363d] md:text-xs">
-            <p>
-              © {currentYear} History Record.
-              {" "}
-              <Link href="/add" className="font-medium underline underline-offset-2">
-                Open scan dashboard
+          <footer className="mt-auto border-t-2 border-[#3a4047]/75 pt-2 text-[10px] text-[#2f363d] md:text-xs">
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>© {currentYear} History Record.</span>
+              <Link href="/how-it-works" className="font-medium underline underline-offset-2">
+                How it works
               </Link>
+              <a
+                href="https://paystack.shop/pay/7kw8vdkm7a"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium underline underline-offset-2"
+              >
+                Support &hearts;
+              </a>
             </p>
           </footer>
         </section>

@@ -55,3 +55,15 @@ body {
 * {
   border-color: var(--border);
 }
+
+@keyframes confetti-fall {
+  0% {
+    top: -12%;
+    transform: rotate(0deg);
+  }
+
+  100% {
+    top: 112%;
+    transform: rotate(520deg);
+  }
+}
