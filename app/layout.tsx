@@ -34,10 +34,8 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground">
         <div className="min-h-screen">{children}</div>
         <Script
-          defer
           src="https://cloud.umami.is/script.js"
           data-website-id="d93aef6b-5367-4efc-8695-c3c8a8a44df9"
-          data-auto-track="true"
         />
       </body>
     </html>
