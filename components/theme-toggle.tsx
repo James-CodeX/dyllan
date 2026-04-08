@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 type Theme = "light" | "dark";
 
 const storageKey = "theme";
+
+type Props = {
+  className?: string;
+};
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -24,7 +30,7 @@ function getInitialTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: Props) {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
@@ -44,7 +50,7 @@ export function ThemeToggle() {
       type="button"
       onClick={onToggle}
       aria-label="Toggle theme"
-      className="fixed right-3 top-3 z-50 p-1 text-foreground transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:right-4 md:top-4"
+      className={cn("p-1 text-foreground transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
     >
       {theme === "dark" ? (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
