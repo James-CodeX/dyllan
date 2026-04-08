@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Source_Code_Pro } from "next/font/google";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default function RootLayout({
           src="https://cloud.umami.is/script.js"
           data-website-id="d93aef6b-5367-4efc-8695-c3c8a8a44df9"
         />
+        <Analytics />
       </body>
     </html>
   );
