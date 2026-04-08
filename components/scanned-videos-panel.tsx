@@ -201,7 +201,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
             disabled={Boolean(bulkAction) || loading || transcriptMissingCount === 0}
           >
             {bulkAction === "fetch_transcripts"
-              ? "Fetching Transcripts..."
+              ? `Fetching Transcripts (${transcriptMissingCount})...`
               : `Fetch Transcripts (${transcriptMissingCount})`}
           </Button>
           <Button
@@ -209,7 +209,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
             onClick={() => void runBulkAction("analyze_all")}
             disabled={Boolean(bulkAction) || loading || aiReadyCount === 0}
           >
-            {bulkAction === "analyze_all" ? "AI Scanning..." : `AI Scan (${aiReadyCount})`}
+            {bulkAction === "analyze_all" ? `AI Scanning (${aiReadyCount})...` : `AI Scan (${aiReadyCount})`}
           </Button>
           <Button
             size="sm"
@@ -217,7 +217,9 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
             onClick={() => void runBulkAction("retry_failed")}
             disabled={Boolean(bulkAction) || loading || retryableFailedCount === 0}
           >
-            {bulkAction === "retry_failed" ? "Retrying..." : `Retry Failed (${retryableFailedCount})`}
+            {bulkAction === "retry_failed"
+              ? `Retrying Failed (${retryableFailedCount})...`
+              : `Retry Failed (${retryableFailedCount})`}
           </Button>
           <Button
             size="sm"
@@ -226,7 +228,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
             onClick={() => void runBulkAction("delete_failed")}
             disabled={Boolean(bulkAction) || loading || failedCount === 0}
           >
-            {bulkAction === "delete_failed" ? "Deleting..." : `Delete Failed (${failedCount})`}
+            {bulkAction === "delete_failed" ? `Deleting Failed (${failedCount})...` : `Delete Failed (${failedCount})`}
           </Button>
           <Button
             size="sm"
@@ -235,7 +237,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
             onClick={() => void runBulkAction("delete_all")}
             disabled={Boolean(bulkAction) || loading || videos.length === 0}
           >
-            {bulkAction === "delete_all" ? "Deleting All..." : "Delete All"}
+            {bulkAction === "delete_all" ? `Deleting All (${videos.length})...` : `Delete All (${videos.length})`}
           </Button>
         </div>
 
