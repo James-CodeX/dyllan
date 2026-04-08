@@ -9,8 +9,8 @@ const steps = [
 
 export default function HowItWorksPage() {
   return (
-    <main className="min-h-screen bg-[#e2e4e6] px-4 py-8">
-      <section className="mx-auto flex w-full max-w-4xl flex-col gap-6 border-2 border-[#3a4047]/75 bg-[#eceeef]/85 p-6 text-[#2f363d]">
+    <main className="min-h-screen bg-[var(--page-bg)] px-4 py-8">
+      <section className="mx-auto flex w-full max-w-4xl flex-col gap-6 border-2 border-[var(--page-line)] bg-[var(--page-panel)] p-6 text-[var(--page-text)]">
         <header className="space-y-2">
           <h1 className="text-xl font-semibold uppercase tracking-[0.08em]">How It Works</h1>
           <p className="text-sm">A simple loop powers every new update.</p>
@@ -19,16 +19,16 @@ export default function HowItWorksPage() {
         <div className="grid gap-5 md:grid-cols-[1fr_220px] md:items-center">
           <div className="space-y-3">
             {steps.map((step, index) => (
-              <div key={step.title} className="border-b-2 border-[#3a4047]/60 pb-2 last:border-b-0 last:pb-0">
+              <div key={step.title} className="border-b-2 border-[var(--page-line)] pb-2 last:border-b-0 last:pb-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em]">Step {index + 1}</p>
                 <p className="mt-0.5 text-sm font-medium">{step.title}</p>
-                <p className="text-xs text-[#4f5861]">{step.detail}</p>
+                <p className="text-xs text-[var(--page-text-soft)]">{step.detail}</p>
               </div>
             ))}
           </div>
 
-          <div className="mx-auto flex h-[220px] w-[220px] items-center justify-center rounded-full border-2 border-[#3a4047]/75">
-            <div className="flex h-[154px] w-[154px] items-center justify-center rounded-full border-2 border-dashed border-[#3a4047]/70 text-center text-xs font-medium uppercase tracking-[0.08em]">
+          <div className="mx-auto flex h-[220px] w-[220px] items-center justify-center rounded-full border-2 border-[var(--page-line)]">
+            <div className="flex h-[154px] w-[154px] items-center justify-center rounded-full border-2 border-dashed border-[var(--page-line)] text-center text-xs font-medium uppercase tracking-[0.08em]">
               Dylan posts
               <br />
               Transcript

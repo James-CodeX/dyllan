@@ -48,10 +48,10 @@ export function EventsTable({ events }: Props) {
 
   return (
     <section>
-      <p className="py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#3a4149] md:text-[11px]">Records {events.length}</p>
+      <p className="py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--page-text)] md:text-[11px]">Records {events.length}</p>
       {grouped.map((group) => (
-        <article key={group.videoId} className="border-b-2 border-[#3a4047]/75 py-2.5 md:py-3">
-          <div className="flex flex-wrap items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.13em] text-[#4a525a] md:text-[10px]">
+        <article key={group.videoId} className="border-b-2 border-[var(--page-line)] py-2.5 md:py-3">
+          <div className="flex flex-wrap items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.13em] text-[var(--page-text-soft)] md:text-[10px]">
             <span>{formatDate(group.videoPublishedAt)}</span>
             <span>•</span>
             <span>{group.items.length} record{group.items.length > 1 ? "s" : ""}</span>
@@ -66,8 +66,8 @@ export function EventsTable({ events }: Props) {
           <div className="mt-2 space-y-2">
             {group.items.map((event) => (
               <div key={event.id}>
-                <h2 className="text-[13px] font-semibold text-[#2f363d] md:text-sm">{event.event}</h2>
-                <p className="mt-0.5 text-[10px] leading-relaxed text-[#424a53] md:text-[11px]">{event.description}</p>
+                <h2 className="text-[13px] font-semibold text-[var(--page-text)] md:text-sm">{event.event}</h2>
+                <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--page-text-soft)] md:text-[11px]">{event.description}</p>
               </div>
             ))}
           </div>

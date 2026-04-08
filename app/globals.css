@@ -20,6 +20,40 @@
   --border: #c9ddda;
   --input: #c9ddda;
   --ring: #0e7490;
+  --page-bg: #e2e4e6;
+  --page-panel: #eceeef;
+  --page-text: #2f363d;
+  --page-text-soft: #4b545d;
+  --page-line: #3a4047;
+  --dashboard-title: #08445a;
+}
+
+.dark {
+  --background: #0f171d;
+  --foreground: #d8e2ea;
+  --card: #162129;
+  --card-foreground: #d8e2ea;
+  --popover: #162129;
+  --popover-foreground: #d8e2ea;
+  --primary: #47a5be;
+  --primary-foreground: #0a1b21;
+  --secondary: #1d2a33;
+  --secondary-foreground: #d8e2ea;
+  --muted: #1b2730;
+  --muted-foreground: #9db0bc;
+  --accent: #253640;
+  --accent-foreground: #d8e2ea;
+  --destructive: #d9534f;
+  --destructive-foreground: #2a0f0e;
+  --border: #304551;
+  --input: #304551;
+  --ring: #47a5be;
+  --page-bg: #121b22;
+  --page-panel: #17232c;
+  --page-text: #d2dde5;
+  --page-text-soft: #93a6b2;
+  --page-line: #566977;
+  --dashboard-title: #75c1d7;
 }
 
 @theme inline {
@@ -50,6 +84,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 * {
