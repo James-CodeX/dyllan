@@ -2,7 +2,12 @@ import { z } from "zod";
 
 import type { DetectedEvent } from "@/lib/types";
 
-const model = "openai/gpt-oss-20b:free";
+const defaultModel = "openai/gpt-oss-20b:free";
+
+function getOpenRouterModel() {
+  const configuredModel = process.env.OPENROUTER_MODEL?.trim();
+  return configuredModel || defaultModel;
+}
 
 const eventSchema = z.object({
   event: z.string().min(1),
@@ -52,6 +57,7 @@ function parseJsonEvents(raw: string) {
 
 async function runChunkAnalysis(chunk: string) {
   const token = process.env.OPENROUTER_KEY;
+  const model = getOpenRouterModel();
 
   if (!token) {
     throw new Error("Missing OPENROUTER_KEY.");

@@ -7,7 +7,7 @@ Minimal fullstack Next.js app that scans YouTube videos, fetches transcripts via
 - Next.js App Router (v16)
 - Drizzle ORM + Turso (libSQL)
 - Apify YouTube transcript actor
-- OpenRouter (`qwen/qwen3.6-plus:free`)
+- OpenRouter (model configurable via env)
 - Tailwind CSS + shadcn-style components
 
 ## Environment Variables
@@ -17,6 +17,7 @@ Create `.env.local`:
 ```env
 APIFY_KEY=your_apify_token
 OPENROUTER_KEY=your_openrouter_token
+OPENROUTER_MODEL=openai/gpt-oss-20b:free
 TURSO_DATABASE_URL=your_turso_database_url
 TURSO_AUTH_TOKEN=your_turso_auth_token
 ```
