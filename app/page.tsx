@@ -60,7 +60,7 @@ export default async function Home({ searchParams }: HomeProps) {
             )}
           </div>
 
-          <footer className="sticky bottom-0 z-20 mt-auto border-t-2 border-[var(--page-line)] bg-[var(--page-bg)] pt-2 text-[10px] text-[var(--page-text)] md:text-xs">
+          <footer className="relative sticky bottom-0 z-20 mt-auto border-t-2 border-[var(--page-line)] bg-[var(--page-bg)] pt-2 pr-11 text-[10px] text-[var(--page-text)] md:pr-14 md:text-xs">
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>© {currentYear} History Record.</span>
               <Link href="/how-it-works" className="font-medium underline underline-offset-2">
@@ -75,14 +75,15 @@ export default async function Home({ searchParams }: HomeProps) {
                 Support &hearts;
               </a>
             </p>
+            <Image
+              src="/dylan sticker.png"
+              alt="Dylan sticker"
+              width={64}
+              height={64}
+              className="pointer-events-none absolute right-0 top-0 h-auto w-[40px] -translate-y-1/2 opacity-95 md:w-[52px]"
+            />
           </footer>
         </section>
-      </div>
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 md:bottom-4">
-        <div className="mx-auto flex w-full max-w-6xl justify-end px-6 md:px-8">
-          <Image src="/dylan sticker.png" alt="Dylan sticker" width={64} height={64} className="h-auto w-[40px] opacity-95 md:w-[52px]" />
-        </div>
       </div>
     </main>
   );

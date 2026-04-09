@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,12 +12,25 @@ type Props = {
   className?: string;
 };
 
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function notifyThemeChange() {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
 }
 
-function getInitialTheme(): Theme {
+function resolvePreferredTheme(): Theme {
   if (typeof window === "undefined") {
     return "light";
   }
@@ -30,19 +43,32 @@ function getInitialTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function getServerThemeSnapshot(): Theme {
+  return "light";
+}
+
+function getClientThemeSnapshot(): Theme {
+  if (typeof document === "undefined") {
+    return "light";
+  }
+
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
 export function ThemeToggle({ className }: Props) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const theme = useSyncExternalStore(subscribe, getClientThemeSnapshot, getServerThemeSnapshot);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    const preferredTheme = resolvePreferredTheme();
+    applyTheme(preferredTheme);
+    notifyThemeChange();
+  }, []);
 
   function onToggle() {
-    setTheme((currentTheme) => {
-      const nextTheme: Theme = currentTheme === "dark" ? "light" : "dark";
-      window.localStorage.setItem(storageKey, nextTheme);
-      return nextTheme;
-    });
+    const nextTheme: Theme = theme === "dark" ? "light" : "dark";
+    window.localStorage.setItem(storageKey, nextTheme);
+    applyTheme(nextTheme);
+    notifyThemeChange();
   }
 
   return (
