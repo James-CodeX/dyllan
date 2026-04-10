@@ -50,7 +50,7 @@ export default async function Home({ searchParams }: HomeProps) {
             <EventsSearchForm initialQuery={searchQuery} />
           </header>
 
-          <div className="mt-2 pb-12">
+          <div className="mt-2 pb-24 md:pb-28">
             {loadError ? (
               <p className="text-[10px] font-medium text-destructive md:text-xs">Could not load events: {loadError}</p>
             ) : events.length ? (
@@ -59,37 +59,39 @@ export default async function Home({ searchParams }: HomeProps) {
               <p className="py-3 text-[10px] text-[var(--page-text-soft)] md:text-xs">No records yet. Run a scan and your latest entries will appear here.</p>
             )}
           </div>
-
-          <footer className="relative sticky bottom-0 z-20 mt-auto border-t-2 border-[var(--page-line)] bg-[var(--page-bg)] pt-2 pr-11 text-[10px] text-[var(--page-text)] md:pr-14 md:text-xs">
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>© {currentYear} History Record.</span>
-              <Link href="/how-it-works" className="font-medium underline underline-offset-2">
-                How it works
-              </Link>
-              <a
-                href="https://paystack.shop/pay/7kw8vdkm7a"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 font-medium underline underline-offset-2"
-              >
-                Buy me a Coffee
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M7 6h9a1 1 0 0 1 1 1v5a5 5 0 0 1-5 5H8a3 3 0 0 1-3-3V7a1 1 0 0 1 1-1z" />
-                  <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17" />
-                  <path d="M8 20h9" />
-                </svg>
-              </a>
-            </p>
-            <Image
-              src="/dylan sticker.png"
-              alt="Dylan sticker"
-              width={64}
-              height={64}
-              className="pointer-events-none absolute right-0 top-0 h-auto w-[40px] -translate-y-1/2 opacity-95 md:w-[52px]"
-            />
-          </footer>
         </section>
       </div>
+
+      <footer className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-[var(--page-line)] bg-[var(--page-bg)] text-[10px] text-[var(--page-text)] md:text-xs">
+        <div className="relative mx-auto w-full max-w-6xl px-6 pb-2 pt-2 pr-11 md:px-8 md:pr-14">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>© {currentYear} History Record.</span>
+            <Link href="/how-it-works" className="font-medium underline underline-offset-2">
+              How it works
+            </Link>
+            <a
+              href="https://paystack.shop/pay/7kw8vdkm7a"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-medium underline underline-offset-2"
+            >
+              Buy me a Coffee
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M7 6h9a1 1 0 0 1 1 1v5a5 5 0 0 1-5 5H8a3 3 0 0 1-3-3V7a1 1 0 0 1 1-1z" />
+                <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17" />
+                <path d="M8 20h9" />
+              </svg>
+            </a>
+          </p>
+          <Image
+            src="/dylan sticker.png"
+            alt="Dylan sticker"
+            width={64}
+            height={64}
+            className="pointer-events-none absolute right-0 top-0 h-auto w-[40px] -translate-y-1/2 opacity-95 md:w-[52px]"
+          />
+        </div>
+      </footer>
     </main>
   );
 }
