@@ -62,8 +62,8 @@ export default async function Home({ searchParams }: HomeProps) {
         </section>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-[var(--page-line)] bg-[var(--page-bg)] text-[10px] text-[var(--page-text)] md:text-xs">
-        <div className="relative mx-auto w-full max-w-6xl px-6 pb-2 pt-2 pr-11 md:px-8 md:pr-14">
+      <footer className="fixed inset-x-0 bottom-0 z-30 bg-[var(--page-bg)] text-[10px] text-[var(--page-text)] md:text-xs">
+        <div className="relative mx-auto w-full max-w-6xl border-t-2 border-[var(--page-line)] px-2 pb-2 pt-2 pr-11 md:px-4 md:pr-14">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>© {currentYear} History Record.</span>
             <Link href="/how-it-works" className="font-medium underline underline-offset-2">
