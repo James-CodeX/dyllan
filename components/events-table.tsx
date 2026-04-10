@@ -13,6 +13,8 @@ type GroupedEvents = {
   videoPublishedAt: string;
   items: StoredEvent[];
   score: number;
+  scoreBand: number;
+  publishedAtMs: number;
 };
 
 function escapeRegExp(value: string) {
@@ -21,6 +23,11 @@ function escapeRegExp(value: string) {
 
 function tokenize(query: string) {
   return Array.from(new Set(query.toLowerCase().trim().split(/\s+/).filter(Boolean)));
+}
+
+function parsePublishedAt(value: string) {
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function countOccurrences(text: string, term: string) {
@@ -100,6 +107,8 @@ function groupAndRankEvents(events: StoredEvent[], query: string, queryTerms: st
       videoPublishedAt: event.videoPublishedAt,
       items: [event],
       score: 0,
+      scoreBand: 0,
+      publishedAtMs: parsePublishedAt(event.videoPublishedAt),
     });
   }
 
@@ -112,46 +121,51 @@ function groupAndRankEvents(events: StoredEvent[], query: string, queryTerms: st
   return groups
     .map((group) => {
       const title = group.videoTitle.toLowerCase();
-      let score = 0;
-
-      if (queryPhrase && title.includes(queryPhrase)) {
-        score += 24;
-      }
-
-      for (const term of queryTerms) {
-        score += countOccurrences(title, term) * 8;
-      }
+      const titleScore = proximityScore(title, queryPhrase, queryTerms);
+      let bestEventScore = 0;
+      let bestDescriptionScore = 0;
 
       for (const item of group.items) {
         const event = item.event.toLowerCase();
         const description = item.description.toLowerCase();
 
-        if (queryPhrase && event.includes(queryPhrase)) {
-          score += 16;
+        const eventScore = proximityScore(event, queryPhrase, queryTerms);
+        if (eventScore > bestEventScore) {
+          bestEventScore = eventScore;
         }
 
-        if (queryPhrase && description.includes(queryPhrase)) {
-          score += 10;
-        }
-
-        for (const term of queryTerms) {
-          score += countOccurrences(event, term) * 6;
-          score += countOccurrences(description, term) * 2;
+        const descriptionScore = proximityScore(description, queryPhrase, queryTerms);
+        if (descriptionScore > bestDescriptionScore) {
+          bestDescriptionScore = descriptionScore;
         }
       }
+
+      const joinedText = `${title} ${group.items
+        .map((item) => `${item.event.toLowerCase()} ${item.description.toLowerCase()}`)
+        .join(" ")}`;
+      const overallCoverage = termCoverageScore(joinedText, queryTerms);
+
+      const score = titleScore * 1.2 + bestEventScore * 1.0 + bestDescriptionScore * 0.55 + overallCoverage * 0.45;
+      const roundedScore = Number(score.toFixed(4));
+      const scoreBand = Math.floor(roundedScore * 10);
 
       return {
         ...group,
-        score,
+        score: roundedScore,
+        scoreBand,
       };
     })
-    .filter((group) => group.score > 0)
+    .filter((group) => group.scoreBand > 0)
     .sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
+      if (b.scoreBand !== a.scoreBand) {
+        return b.scoreBand - a.scoreBand;
       }
 
-      return b.videoPublishedAt.localeCompare(a.videoPublishedAt);
+      if (b.publishedAtMs !== a.publishedAtMs) {
+        return b.publishedAtMs - a.publishedAtMs;
+      }
+
+      return b.score - a.score;
     });
 }
 
@@ -203,4 +217,54 @@ export function EventsTable({ events, searchQuery = "" }: Props) {
       ))}
     </section>
   );
+}
+
+function termCoverageScore(text: string, queryTerms: string[]) {
+  if (!queryTerms.length) {
+    return 0;
+  }
+
+  let matched = 0;
+
+  for (const term of queryTerms) {
+    if (text.includes(term)) {
+      matched += 1;
+    }
+  }
+
+  return matched / queryTerms.length;
+}
+
+function proximityScore(text: string, queryPhrase: string, queryTerms: string[]) {
+  if (!text) {
+    return 0;
+  }
+
+  const normalized = text.toLowerCase();
+
+  if (queryPhrase && normalized === queryPhrase) {
+    return 1;
+  }
+
+  if (queryPhrase && normalized.startsWith(queryPhrase)) {
+    return 0.94;
+  }
+
+  if (queryPhrase && normalized.includes(queryPhrase)) {
+    return 0.82;
+  }
+
+  const coverage = termCoverageScore(normalized, queryTerms);
+
+  if (coverage === 0) {
+    return 0;
+  }
+
+  let repetitions = 0;
+  for (const term of queryTerms) {
+    repetitions += countOccurrences(normalized, term);
+  }
+
+  const densityBoost = Math.min(0.15, repetitions * 0.02);
+  return Math.min(0.8, coverage * 0.7 + densityBoost);
 }
