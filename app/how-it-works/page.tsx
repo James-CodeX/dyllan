@@ -7,19 +7,30 @@ const steps = [
   { title: "Events published", detail: "Detected records appear on the events feed." },
 ];
 
+const orbitPositions = [
+  "left-1/2 top-2 -translate-x-1/2",
+  "right-2 top-1/2 -translate-y-1/2",
+  "left-1/2 bottom-2 -translate-x-1/2",
+  "left-2 top-1/2 -translate-y-1/2",
+];
+
 export default function HowItWorksPage() {
   return (
     <main className="min-h-screen bg-[var(--page-bg)] px-4 py-8">
-      <section className="mx-auto flex w-full max-w-4xl flex-col gap-6 border-2 border-[var(--page-line)] bg-[var(--page-panel)] p-6 text-[var(--page-text)]">
+      <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 p-4 text-[var(--page-text)] md:p-6">
         <header className="space-y-2">
           <h1 className="text-xl font-semibold uppercase tracking-[0.08em]">How It Works</h1>
           <p className="text-sm">A simple loop powers every new update.</p>
         </header>
 
-        <div className="grid gap-5 md:grid-cols-[1fr_220px] md:items-center">
-          <div className="space-y-3">
+        <div className="grid gap-8 md:grid-cols-[1fr_360px] md:items-center md:gap-10">
+          <div className="relative space-y-3 pl-7">
+            <div className="absolute bottom-3 left-2 top-3 w-px bg-[var(--page-line)]" />
             {steps.map((step, index) => (
-              <div key={step.title} className="border-b-2 border-[var(--page-line)] pb-2 last:border-b-0 last:pb-0">
+              <div key={step.title} className="relative rounded-md border border-[var(--page-line)] bg-background/60 p-3">
+                <span className="absolute -left-7 top-3 flex h-4 w-4 items-center justify-center rounded-full border border-[var(--page-line)] bg-[var(--page-bg)] text-[9px] font-semibold leading-none">
+                  {index + 1}
+                </span>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em]">Step {index + 1}</p>
                 <p className="mt-0.5 text-sm font-medium">{step.title}</p>
                 <p className="text-xs text-[var(--page-text-soft)]">{step.detail}</p>
@@ -27,18 +38,26 @@ export default function HowItWorksPage() {
             ))}
           </div>
 
-          <div className="mx-auto flex h-[220px] w-[220px] items-center justify-center rounded-full border-2 border-[var(--page-line)]">
-            <div className="flex h-[154px] w-[154px] items-center justify-center rounded-full border-2 border-dashed border-[var(--page-line)] text-center text-xs font-medium uppercase tracking-[0.08em]">
-              Dylan posts
-              <br />
-              Transcript
-              <br />
-              AI
-              <br />
-              Events
-              <br />
-              Repeat
-            </div>
+          <div className="relative mx-auto h-[296px] w-[296px] md:h-[340px] md:w-[340px]">
+            <div className="absolute inset-0 rounded-full border-2 border-[var(--page-line)]" />
+            <div className="absolute inset-4 rounded-full border-2 border-dashed border-[var(--page-line)] [animation:spin_20s_linear_infinite]" />
+
+            <svg aria-hidden="true" viewBox="0 0 340 340" className="absolute inset-0 h-full w-full">
+              <circle cx="170" cy="170" r="126" fill="none" stroke="var(--page-line)" strokeDasharray="4 9" strokeWidth="1.5" />
+              <path d="M170 44 l8 4 -7 5" fill="none" stroke="var(--page-line)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M296 170 l-4 8 -5 -7" fill="none" stroke="var(--page-line)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M170 296 l-8 -4 7 -5" fill="none" stroke="var(--page-line)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M44 170 l4 -8 5 7" fill="none" stroke="var(--page-line)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+
+            {steps.map((step, index) => (
+              <div
+                key={step.title}
+                className={`absolute ${orbitPositions[index]} min-w-[106px] rounded-md border border-[var(--page-line)] bg-[var(--page-panel)] px-2 py-1 text-center text-[10px] font-medium uppercase tracking-[0.06em]`}
+              >
+                {step.title}
+              </div>
+            ))}
           </div>
         </div>
 
