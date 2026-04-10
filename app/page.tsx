@@ -31,9 +31,9 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   return (
-    <main className="flex min-h-screen bg-[var(--page-bg)] px-4 py-4 md:py-6">
+    <main className="flex min-h-screen bg-[var(--page-bg)] px-4 pb-4 pt-0 md:pb-6 md:pt-0">
       <div className="mx-auto flex w-full max-w-6xl flex-1">
-        <section className="relative flex min-h-full w-full flex-col bg-transparent px-2 py-2 text-[11px] text-[var(--page-text)] md:px-4 md:py-3 md:text-xs">
+        <section className="relative flex min-h-full w-full flex-col bg-transparent px-2 pb-2 pt-0 text-[11px] text-[var(--page-text)] md:px-4 md:pb-3 md:pt-0 md:text-xs">
           <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b-2 border-[var(--page-line)] bg-[var(--page-bg)] pb-2">
             <div className="flex items-center gap-3">
               <Image
