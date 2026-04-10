@@ -6,10 +6,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { ScannedVideo } from "@/lib/types";
 
 type Props = {
   refreshSignal: number;
+};
+
+type EditableVideoFields = {
+  title: string;
+  url: string;
+  publishedAt: string;
 };
 
 function statusVariant(status: ScannedVideo["aiStatus"]) {
@@ -42,6 +49,9 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
   const [info, setInfo] = useState<string | null>(null);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<EditableVideoFields | null>(null);
   const [bulkAction, setBulkAction] = useState<string | null>(null);
 
   const failedCount = videos.filter((video) => video.aiStatus === "failed").length;
@@ -110,6 +120,52 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
       setError(caught instanceof Error ? caught.message : "Delete failed.");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  function startEdit(video: ScannedVideo) {
+    setEditingId(video.videoId);
+    setEditFields({
+      title: video.title,
+      url: video.url,
+      publishedAt: video.publishedAt,
+    });
+    setError(null);
+    setInfo(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditFields(null);
+  }
+
+  async function saveEdit(videoId: string) {
+    if (!editFields) {
+      return;
+    }
+
+    setSavingId(videoId);
+    setError(null);
+    setInfo(null);
+
+    try {
+      const res = await fetch(`/api/videos/${videoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFields),
+      });
+
+      const payload = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(payload.error || "Update failed.");
+      }
+
+      cancelEdit();
+      await loadVideos();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Update failed.");
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -275,7 +331,7 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
                 <Button
                   size="sm"
                   onClick={() => void analyze(video.videoId)}
-                  disabled={runningId === video.videoId || Boolean(bulkAction)}
+                  disabled={runningId === video.videoId || Boolean(bulkAction) || editingId === video.videoId}
                 >
                   {runningId === video.videoId
                     ? "AI Scanning..."
@@ -283,17 +339,65 @@ export function ScannedVideosPanel({ refreshSignal }: Props) {
                       ? "AI Scan Again"
                       : "AI Scan"}
                 </Button>
+                {editingId === video.videoId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={cancelEdit}
+                    disabled={savingId === video.videoId}
+                  >
+                    Cancel Edit
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => startEdit(video)}
+                    disabled={Boolean(bulkAction) || runningId === video.videoId}
+                  >
+                    Edit
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
                   className="border-destructive/50 text-destructive hover:bg-destructive/10"
                   onClick={() => void removeVideo(video.videoId)}
-                  disabled={deletingId === video.videoId || Boolean(bulkAction)}
+                  disabled={deletingId === video.videoId || Boolean(bulkAction) || editingId === video.videoId}
                 >
                   {deletingId === video.videoId ? "Deleting..." : "Delete"}
                 </Button>
               </div>
             </div>
+
+            {editingId === video.videoId && editFields ? (
+              <div className="mt-3 space-y-2 rounded border border-border/60 p-3">
+                <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Edit Video Fields</p>
+                <Input
+                  value={editFields.title}
+                  onChange={(event) => setEditFields((current) => (current ? { ...current, title: event.target.value } : current))}
+                  placeholder="Video title"
+                />
+                <Input
+                  value={editFields.url}
+                  onChange={(event) => setEditFields((current) => (current ? { ...current, url: event.target.value } : current))}
+                  placeholder="Video URL"
+                />
+                <Input
+                  value={editFields.publishedAt}
+                  onChange={(event) =>
+                    setEditFields((current) => (current ? { ...current, publishedAt: event.target.value } : current))
+                  }
+                  placeholder="Published date"
+                />
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => void saveEdit(video.videoId)} disabled={savingId === video.videoId || Boolean(bulkAction)}>
+                    {savingId === video.videoId ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">You can update title, URL, or published date.</p>
+                </div>
+              </div>
+            ) : null}
 
             <details className="mt-2 rounded border border-border/60 p-2">
               <summary className="cursor-pointer text-sm font-medium">Transcript</summary>

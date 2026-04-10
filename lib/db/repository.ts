@@ -12,6 +12,12 @@ async function ensureReady() {
 
 type VideoRow = typeof videosTable.$inferSelect;
 
+type VideoEditableFields = {
+  title: string;
+  url: string;
+  publishedAt: string;
+};
+
 export async function getVideo(videoId: string) {
   await ensureReady();
   const rows = await db
@@ -235,4 +241,20 @@ export async function listEvents(videoId?: string) {
     .innerJoin(videosTable, eq(eventsTable.videoDbId, videosTable.id))
     .orderBy(desc(videosTable.publishedAt), desc(eventsTable.createdAt))
     .execute()) as StoredEvent[];
+}
+
+export async function updateVideoFields(videoId: string, fields: VideoEditableFields) {
+  await ensureReady();
+
+  const updated = await db
+    .update(videosTable)
+    .set({
+      title: fields.title,
+      url: fields.url,
+      publishedAt: fields.publishedAt,
+    })
+    .where(eq(videosTable.videoId, videoId))
+    .returning({ id: videosTable.id });
+
+  return updated.length > 0;
 }
