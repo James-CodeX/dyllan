@@ -64,25 +64,71 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <footer className="fixed inset-x-0 bottom-0 z-30 bg-[var(--page-bg)] text-[10px] text-[var(--page-text)] md:text-xs">
         <div className="relative mx-auto w-full max-w-6xl border-t-2 border-[var(--page-line)] px-2 pb-2 pt-2 pr-11 md:px-4 md:pr-14">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>© {currentYear} History Record.</span>
-            <Link href="/how-it-works" className="font-medium underline underline-offset-2">
-              How it works
-            </Link>
-            <a
-              href="https://paystack.shop/pay/7kw8vdkm7a"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-medium underline underline-offset-2"
-            >
-              Buy me a Coffee
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M7 6h9a1 1 0 0 1 1 1v5a5 5 0 0 1-5 5H8a3 3 0 0 1-3-3V7a1 1 0 0 1 1-1z" />
-                <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17" />
-                <path d="M8 20h9" />
-              </svg>
-            </a>
-          </p>
+          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[auto_1fr] sm:items-center">
+            <p className="inline-flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="whitespace-nowrap">© {currentYear} History Record.</span>
+              <Link href="/how-it-works" className="font-medium underline underline-offset-2">
+                How it works
+              </Link>
+              <a
+                href="https://paystack.shop/pay/7kw8vdkm7a"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 whitespace-nowrap font-medium underline underline-offset-2"
+              >
+                Buy me a Coffee
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M7 6h9a1 1 0 0 1 1 1v5a5 5 0 0 1-5 5H8a3 3 0 0 1-3-3V7a1 1 0 0 1 1-1z" />
+                  <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17" />
+                  <path d="M8 20h9" />
+                </svg>
+              </a>
+            </p>
+            <div className="flex items-center gap-2 sm:justify-center">
+              <a
+                href="https://www.linkedin.com/in/james-karanja-4m42ing/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="LinkedIn"
+                className="inline-flex items-center justify-center text-[var(--page-text)] transition hover:opacity-75"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M8 10v7" />
+                  <path d="M8 7h.01" />
+                  <path d="M12 17v-4" />
+                  <path d="M12 13a2.5 2.5 0 0 1 5 0v4" />
+                </svg>
+              </a>
+              <a
+                href="https://www.instagram.com/_james.karanja/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+                className="inline-flex items-center justify-center text-[var(--page-text)] transition hover:opacity-75"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M17.5 6.5h.01" />
+                </svg>
+              </a>
+              <a
+                href="https://jameskaranja.me"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Website"
+                className="inline-flex items-center justify-center text-[var(--page-text)] transition hover:opacity-75"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M3 12h18" />
+                  <path d="M12 3c3 3 3 15 0 18" />
+                  <path d="M12 3c-3 3-3 15 0 18" />
+                </svg>
+              </a>
+            </div>
+          </div>
           <Image
             src="/dylan sticker.png"
             alt="Dylan sticker"
