@@ -137,6 +137,7 @@ export async function runScan(input: string): Promise<ScanPipelineResult> {
 export async function runCheckForUpdates(channelInput: string): Promise<ScanPipelineResult> {
   const feedVideos = await collectChannelFeedVideos(channelInput);
   const items: ScanItemResult[] = [];
+  const targets: Array<{ videoId: string; title: string }> = [];
 
   let scannedVideos = 0;
   let cachedVideos = 0;
@@ -145,18 +146,26 @@ export async function runCheckForUpdates(channelInput: string): Promise<ScanPipe
 
   for (const video of feedVideos) {
     const existing = await getVideo(video.videoId);
-    if (existing) {
+
+    if (!existing) {
+      await upsertVideo(video, null);
+      targets.push({ videoId: video.videoId, title: video.title });
+      continue;
+    }
+
+    await upsertVideo(video, existing.transcript);
+
+    if (existing.processedAt) {
       cachedVideos += 1;
       continue;
     }
 
-    const saved = await upsertVideo(video, null);
+    targets.push({ videoId: video.videoId, title: video.title });
+  }
 
+  for (const target of targets) {
     try {
-      const transcript = (await fetchTranscript(video.url)).slice(0, 20000);
-      await upsertVideo(video, transcript);
-
-      const analyzed = await analyzeVideoById(video.videoId);
+      const analyzed = await analyzeVideoById(target.videoId);
       if (analyzed.error) {
         failedVideos += 1;
       } else {
@@ -165,12 +174,17 @@ export async function runCheckForUpdates(channelInput: string): Promise<ScanPipe
       }
       items.push(analyzed);
     } catch (error) {
+      const saved = await getVideo(target.videoId);
       const message = error instanceof Error ? error.message : "Failed to process new video.";
-      await markVideoFailed(saved.id, message);
+
+      if (saved) {
+        await markVideoFailed(saved.id, message);
+      }
+
       failedVideos += 1;
       items.push({
-        videoId: video.videoId,
-        title: video.title,
+        videoId: target.videoId,
+        title: target.title,
         cached: false,
         eventsFound: 0,
         error: message,
