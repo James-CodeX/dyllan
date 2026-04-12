@@ -9,25 +9,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import type { ScanPipelineResult } from "@/lib/types";
 
-const defaultInput = "https://www.youtube.com/@Dylann";
+const defaultInput = "https://www.youtube.com/feeds/videos.xml?channel_id=UCzPpbeK8ANcNKg5aoMB0miw";
 
 type Props = {
   onScanComplete?: () => void;
 };
 
+type ScanAction = "scan" | "updates";
+
 export function ScanForm({ onScanComplete }: Props) {
   const [input, setInput] = useState(defaultInput);
-  const [loading, setLoading] = useState(false);
+  const [runningAction, setRunningAction] = useState<ScanAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanPipelineResult | null>(null);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
+  const loading = runningAction !== null;
+
+  async function runAction(action: ScanAction) {
+    setRunningAction(action);
     setError(null);
 
     try {
-      const res = await fetch("/api/scan", {
+      const endpoint = action === "updates" ? "/api/scan/updates" : "/api/scan";
+      const fallbackMessage = action === "updates" ? "Update check failed." : "Scan failed.";
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input }),
@@ -36,17 +42,22 @@ export function ScanForm({ onScanComplete }: Props) {
       const payload = (await res.json()) as ScanPipelineResult & { error?: string };
 
       if (!res.ok) {
-        throw new Error(payload.error || "Scan failed.");
+        throw new Error(payload.error || fallbackMessage);
       }
 
       setResult(payload);
       onScanComplete?.();
     } catch (caught) {
       setResult(null);
-      setError(caught instanceof Error ? caught.message : "Scan failed.");
+      setError(caught instanceof Error ? caught.message : "Action failed.");
     } finally {
-      setLoading(false);
+      setRunningAction(null);
     }
+  }
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void runAction("scan");
   }
 
   return (
@@ -54,14 +65,19 @@ export function ScanForm({ onScanComplete }: Props) {
       <Card className="border-border/60">
         <CardHeader>
           <CardTitle>Scan Channel or Video</CardTitle>
-          <CardDescription>Paste a YouTube channel URL or single video URL to detect record events.</CardDescription>
+          <CardDescription>
+            Paste a channel URL to scan manually, or use Check for Updates to fetch RSS and process only new videos.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <Input value={input} onChange={(event) => setInput(event.target.value)} placeholder="https://www.youtube.com/@channel" required />
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-                {loading ? "Scanning..." : "Scan"}
+                {runningAction === "scan" ? "Scanning..." : "Scan"}
+              </Button>
+              <Button type="button" variant="outline" disabled={loading} className="w-full sm:w-auto" onClick={() => void runAction("updates")}>
+                {runningAction === "updates" ? "Checking updates..." : "Check for Updates"}
               </Button>
             </div>
           </form>
@@ -70,7 +86,7 @@ export function ScanForm({ onScanComplete }: Props) {
 
       {error ? (
         <Alert className="border-destructive/40 bg-destructive/5">
-          <AlertTitle>Scan failed</AlertTitle>
+          <AlertTitle>Action failed</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

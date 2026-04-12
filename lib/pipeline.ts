@@ -11,7 +11,7 @@ import {
 } from "@/lib/db/repository";
 import { analyzeTranscript } from "@/lib/openrouter";
 import type { ScanItemResult, ScanPipelineResult } from "@/lib/types";
-import { collectVideos } from "@/lib/youtube";
+import { collectChannelFeedVideos, collectVideos } from "@/lib/youtube";
 
 export async function analyzeVideoById(videoId: string): Promise<ScanItemResult> {
   const existing = await getVideo(videoId);
@@ -126,6 +126,60 @@ export async function runScan(input: string): Promise<ScanPipelineResult> {
 
   return {
     totalVideos: videos.length,
+    scannedVideos,
+    cachedVideos,
+    failedVideos,
+    newEvents,
+    items,
+  };
+}
+
+export async function runCheckForUpdates(channelInput: string): Promise<ScanPipelineResult> {
+  const feedVideos = await collectChannelFeedVideos(channelInput);
+  const items: ScanItemResult[] = [];
+
+  let scannedVideos = 0;
+  let cachedVideos = 0;
+  let failedVideos = 0;
+  let newEvents = 0;
+
+  for (const video of feedVideos) {
+    const existing = await getVideo(video.videoId);
+    if (existing) {
+      cachedVideos += 1;
+      continue;
+    }
+
+    const saved = await upsertVideo(video, null);
+
+    try {
+      const transcript = (await fetchTranscript(video.url)).slice(0, 20000);
+      await upsertVideo(video, transcript);
+
+      const analyzed = await analyzeVideoById(video.videoId);
+      if (analyzed.error) {
+        failedVideos += 1;
+      } else {
+        scannedVideos += 1;
+        newEvents += analyzed.eventsFound;
+      }
+      items.push(analyzed);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to process new video.";
+      await markVideoFailed(saved.id, message);
+      failedVideos += 1;
+      items.push({
+        videoId: video.videoId,
+        title: video.title,
+        cached: false,
+        eventsFound: 0,
+        error: message,
+      });
+    }
+  }
+
+  return {
+    totalVideos: feedVideos.length,
     scannedVideos,
     cachedVideos,
     failedVideos,

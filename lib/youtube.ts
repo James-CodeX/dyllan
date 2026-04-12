@@ -37,6 +37,14 @@ async function resolveChannelId(channelUrl: string) {
   const url = new URL(normalizeUrl(channelUrl));
   const segments = url.pathname.split("/").filter(Boolean);
 
+  if (segments[0] === "feeds" && segments[1] === "videos.xml") {
+    const channelId = url.searchParams.get("channel_id")?.trim();
+    if (channelId) {
+      return channelId;
+    }
+    throw new Error("Could not resolve channel id from feed URL.");
+  }
+
   if (segments[0] === "channel" && segments[1]) {
     return segments[1];
   }
@@ -61,14 +69,20 @@ function readTag(block: string, tag: string) {
   return match?.[1]?.trim() || "";
 }
 
+function readAlternateLink(block: string) {
+  const match = block.match(/<link[^>]*rel="alternate"[^>]*href="([^"]+)"[^>]*\/?>/i);
+  return match?.[1]?.trim() || "";
+}
+
 function parseFeed(xml: string) {
   const entries = xml.match(/<entry>[\s\S]*?<\/entry>/g) ?? [];
 
   return entries
     .map((entry) => {
       const videoId = readTag(entry, "yt:videoId");
-      const title = readTag(entry, "title");
+      const title = readTag(entry, "media:title") || readTag(entry, "title");
       const publishedAt = readTag(entry, "published");
+      const feedUrl = readAlternateLink(entry);
 
       if (!videoId || !title || !publishedAt) {
         return null;
@@ -78,10 +92,27 @@ function parseFeed(xml: string) {
         videoId,
         title,
         publishedAt,
-        url: `https://www.youtube.com/watch?v=${videoId}`,
+        url: feedUrl || `https://www.youtube.com/watch?v=${videoId}`,
       };
     })
     .filter((item): item is ScanInputVideo => Boolean(item));
+}
+
+export async function collectChannelFeedVideos(channelInput: string) {
+  const channelId = await resolveChannelId(channelInput);
+  const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+  const res = await fetch(feedUrl, { cache: "no-store" });
+
+  if (!res.ok) {
+    throw new Error("Could not load channel feed.");
+  }
+
+  const xml = await res.text();
+  const since = Date.now() - ONE_YEAR_MS;
+
+  return parseFeed(xml)
+    .filter((video) => Date.parse(video.publishedAt) >= since)
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
 }
 
 export async function collectVideos(input: string) {
@@ -100,18 +131,5 @@ export async function collectVideos(input: string) {
     ];
   }
 
-  const channelId = await resolveChannelId(input);
-  const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-  const res = await fetch(feedUrl, { cache: "no-store" });
-
-  if (!res.ok) {
-    throw new Error("Could not load channel feed.");
-  }
-
-  const xml = await res.text();
-  const since = Date.now() - ONE_YEAR_MS;
-
-  return parseFeed(xml)
-    .filter((video) => Date.parse(video.publishedAt) >= since)
-    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  return collectChannelFeedVideos(input);
 }
