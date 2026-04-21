@@ -1,10 +1,12 @@
-# 🎥 YouTube History Record Tracker
+# 🎥 DylanPage(NewsDaddy) History Made Tracker
 
 <p align="center">
   <img src="./public/dylan-sticker.png" alt="Dylan Sticker" width="150" />
 </p>
 
 A minimal, full-stack Next.js web application that automatically scans YouTube videos, fetches transcripts via Apify, detects record-breaking events using OpenRouter's AI models, and stores the results securely in a Turso SQLite database using Drizzle ORM.
+
+**Live Event Tracker:** [https://dylanpage.vercel.app](https://dylanpage.vercel.app)
 
 ---
 
