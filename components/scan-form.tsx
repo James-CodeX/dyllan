@@ -9,16 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import type { ScanPipelineResult } from "@/lib/types";
 
-const defaultInput = "https://www.youtube.com/feeds/videos.xml?channel_id=UCzPpbeK8ANcNKg5aoMB0miw";
-
 type Props = {
+  initialInput: string;
   onScanComplete?: () => void;
 };
 
 type ScanAction = "scan" | "updates";
 
-export function ScanForm({ onScanComplete }: Props) {
-  const [input, setInput] = useState(defaultInput);
+export function ScanForm({ initialInput, onScanComplete }: Props) {
+  const [input, setInput] = useState(initialInput);
   const [runningAction, setRunningAction] = useState<ScanAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanPipelineResult | null>(null);
@@ -32,11 +31,19 @@ export function ScanForm({ onScanComplete }: Props) {
     try {
       const endpoint = action === "updates" ? "/api/scan/updates" : "/api/scan";
       const fallbackMessage = action === "updates" ? "Update check failed." : "Scan failed.";
+      const body =
+        action === "updates"
+          ? {
+              input: input.trim() || undefined,
+            }
+          : {
+              input,
+            };
 
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify(body),
       });
 
       const payload = (await res.json()) as ScanPipelineResult & { error?: string };

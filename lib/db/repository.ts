@@ -10,6 +10,10 @@ async function ensureReady() {
   await schemaReady;
 }
 
+export async function ensureRepositoryReady() {
+  await ensureReady();
+}
+
 type VideoRow = typeof videosTable.$inferSelect;
 
 type VideoEditableFields = {

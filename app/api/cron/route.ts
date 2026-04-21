@@ -1,10 +1,9 @@
 import { runCheckForUpdates } from "@/lib/pipeline";
+import { resolveScanSource } from "@/lib/scan-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-
-const DEFAULT_RSS_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=UCzPpbeK8ANcNKg5aoMB0miw";
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -23,7 +22,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const source = process.env.YOUTUBE_CHANNEL_INPUT || process.env.YOUTUBE_RSS_URL || DEFAULT_RSS_URL;
+    const source = resolveScanSource();
     const result = await runCheckForUpdates(source);
 
     return Response.json({
