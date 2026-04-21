@@ -1,6 +1,5 @@
 import { fetchTranscript } from "@/lib/apify";
 import {
-  ensureRepositoryReady,
   getEventsByVideoId,
   getVideo,
   isVideoProcessed,
@@ -64,8 +63,8 @@ export async function analyzeVideoById(videoId: string): Promise<ScanItemResult>
 }
 
 export async function runScan(input: string): Promise<ScanPipelineResult> {
-  const [freshVideos, queuedRows] = await Promise.all([collectVideos(input), listQueuedVideos()]);
-  const queuedVideos = queuedRows.map((video) => ({
+  const freshVideos = await collectVideos(input);
+  const queuedVideos = (await listQueuedVideos()).map((video) => ({
     videoId: video.videoId,
     title: video.title,
     url: video.url,
@@ -136,7 +135,7 @@ export async function runScan(input: string): Promise<ScanPipelineResult> {
 }
 
 export async function runCheckForUpdates(channelInput: string): Promise<ScanPipelineResult> {
-  const [feedVideos] = await Promise.all([collectChannelFeedVideos(channelInput), ensureRepositoryReady()]);
+  const feedVideos = await collectChannelFeedVideos(channelInput);
   const items: ScanItemResult[] = [];
   const targets: Array<{ videoId: string; title: string }> = [];
 

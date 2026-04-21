@@ -20,11 +20,7 @@ OPENROUTER_KEY=your_openrouter_token
 OPENROUTER_MODEL=openai/gpt-oss-20b:free
 TURSO_DATABASE_URL=your_turso_database_url
 TURSO_AUTH_TOKEN=your_turso_auth_token
-YOUTUBE_CHANNEL_INPUT=https://www.youtube.com/@your-channel
-YOUTUBE_RSS_URL=
 ```
-
-Set `YOUTUBE_CHANNEL_INPUT` (preferred) or `YOUTUBE_RSS_URL` so `Check for Updates` and cron scans have a default source.
 
 ## Install and Run
 
